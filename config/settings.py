@@ -6,14 +6,24 @@ from enum import Enum
 # ============================================================
 # Paths
 # ============================================================
+import os
 PROJECT_ROOT = Path(__file__).parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
+
+# Use /tmp for DB on Streamlit Cloud (Linux), local dir on Windows
+if os.environ.get('STREAMLIT_CLOUD') or os.environ.get('IS_STREAMLIT_CLOUD'):
+    DATA_DIR = Path('/tmp/fund_advisor_data')
+else:
+    DATA_DIR = PROJECT_ROOT / "data"
+
 DB_PATH = DATA_DIR / "fund_advisory.db"
 CACHE_DIR = DATA_DIR / "cache"
 
 # Ensure directories exist
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 # Database
 DATABASE_URL = f"sqlite:///{DB_PATH.as_posix()}"
