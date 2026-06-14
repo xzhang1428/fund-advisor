@@ -403,6 +403,52 @@ class Repository:
         ).order_by(desc(MacroIndicator.period)).limit(periods).all()
 
     # ================================================================
+    # Daily Snapshots
+    # ================================================================
+    def record_daily_snapshot(self, portfolio_id: int, snapshot_date: date,
+                              total_value: float, daily_pnl: float = 0,
+                              daily_return_pct: float = 0, notes: str = None):
+        """Record a daily portfolio value snapshot."""
+        from src.storage.models import DailySnapshot
+        existing = self.session.query(DailySnapshot).filter(
+            DailySnapshot.portfolio_id == portfolio_id,
+            DailySnapshot.snapshot_date == snapshot_date
+        ).first()
+        if existing:
+            existing.total_value = total_value
+            existing.daily_pnl = daily_pnl
+            existing.daily_return_pct = daily_return_pct
+            if notes:
+                existing.notes = notes
+        else:
+            snap = DailySnapshot(
+                portfolio_id=portfolio_id, snapshot_date=snapshot_date,
+                total_value=total_value, daily_pnl=daily_pnl,
+                daily_return_pct=daily_return_pct, notes=notes
+            )
+            self.session.add(snap)
+
+    def get_daily_snapshots(self, portfolio_id: int, start_date: date = None,
+                            end_date: date = None) -> list:
+        """Get daily snapshots for a portfolio."""
+        from src.storage.models import DailySnapshot
+        q = self.session.query(DailySnapshot).filter(
+            DailySnapshot.portfolio_id == portfolio_id
+        )
+        if start_date:
+            q = q.filter(DailySnapshot.snapshot_date >= start_date)
+        if end_date:
+            q = q.filter(DailySnapshot.snapshot_date <= end_date)
+        return q.order_by(DailySnapshot.snapshot_date).all()
+
+    def get_latest_snapshot(self, portfolio_id: int):
+        """Get the most recent snapshot for a portfolio."""
+        from src.storage.models import DailySnapshot
+        return self.session.query(DailySnapshot).filter(
+            DailySnapshot.portfolio_id == portfolio_id
+        ).order_by(DailySnapshot.snapshot_date.desc()).first()
+
+    # ================================================================
     # Utility
     # ================================================================
     def commit(self):

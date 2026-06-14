@@ -99,7 +99,7 @@ st.sidebar.caption("数据来源: akshare")
 # Navigation
 page = st.sidebar.radio(
     "导航",
-    ["🏠 市场概览", "🔍 基金筛选", "📊 组合管理", "🎯 智能配置向导", "💡 投资建议", "⚠ 告警中心"],
+    ["🏠 市场概览", "🔍 基金筛选", "📊 组合管理", "🎯 智能配置向导", "💡 投资建议", "📅 收益日历", "⚠ 告警中心"],
 )
 
 # ============================================================
@@ -1157,7 +1157,163 @@ elif page == "💡 投资建议":
                             st.markdown("---")
 
 # ============================================================
-# PAGE 6: Alert Center
+# PAGE 6: Daily P&L Calendar
+# ============================================================
+elif page == "📅 收益日历":
+    st.title("收益日历")
+    st.caption("每日记录组合市值，可视化追踪收益变化")
+
+    from src.portfolio.manager import PortfolioManager
+    from datetime import date as dt_date, timedelta
+    import calendar
+
+    portfolios = repo.get_all_portfolios()
+    if not portfolios:
+        st.info("还没有组合")
+    else:
+        mgr = PortfolioManager(repo)
+        pid = st.selectbox(
+            "选择组合", [p.id for p in portfolios],
+            format_func=lambda x: f"[{x}] {repo.get_portfolio(x).name}",
+            key="cal_portfolio"
+        )
+
+        # Record today's snapshot
+        if st.button("📸 记录今日市值", type="primary"):
+            summary = mgr.get_portfolio_summary(pid)
+            current_val = summary.get("current_value", 0)
+            prev = repo.get_latest_snapshot(pid)
+            prev_val = prev.total_value if prev else summary.get("initial_capital", current_val)
+            daily_pnl = current_val - prev_val
+            daily_ret = (current_val / prev_val - 1) if prev_val > 0 else 0
+            repo.record_daily_snapshot(pid, dt_date.today(), current_val, daily_pnl, daily_ret)
+            commit()
+            st.success(f"已记录！今日市值 ¥{current_val:,.2f}，日盈亏 ¥{daily_pnl:+,.2f} ({daily_ret*100:+.2f}%)")
+            st.rerun()
+
+        # Calendar view
+        st.markdown("---")
+
+        # Pick month
+        today = dt_date.today()
+        cal_month = st.selectbox("选择月份",
+            [f"{today.year}-{m:02d}" for m in range(1, 13)],
+            index=today.month - 1, key="cal_month"
+        )
+        year, month = int(cal_month.split("-")[0]), int(cal_month.split("-")[1])
+
+        # Get data for this month
+        start_d = dt_date(year, month, 1)
+        end_d = dt_date(year, month, calendar.monthrange(year, month)[1])
+        snapshots = repo.get_daily_snapshots(pid, start_d, end_d)
+        snap_map = {}
+        for s in snapshots:
+            snap_map[s.snapshot_date] = {
+                "value": s.total_value, "pnl": s.daily_pnl,
+                "ret": s.daily_return_pct, "notes": s.notes
+            }
+
+        # Auto-record today if not yet recorded
+        if today not in snap_map and today >= start_d and today <= end_d:
+            # Check if user clicked record button
+            pass
+
+        # Build calendar grid
+        cal = calendar.Calendar(firstweekday=6)  # Sunday first
+        weeks = cal.monthdayscalendar(year, month)
+        day_names = ["日", "一", "二", "三", "四", "五", "六"]
+
+        # Monthly summary
+        month_snapshots = [s for s in snapshots if s.snapshot_date.month == month]
+        month_pnl = sum(s.daily_pnl or 0 for s in month_snapshots)
+        month_return = (snapshots[-1].total_value / snapshots[0].total_value - 1) * 100 if len(snapshots) >= 2 else 0
+        pos_days = sum(1 for s in month_snapshots if (s.daily_pnl or 0) > 0)
+        neg_days = sum(1 for s in month_snapshots if (s.daily_pnl or 0) < 0)
+        total_days = len(month_snapshots)
+        win_rate = pos_days / total_days * 100 if total_days > 0 else 0
+
+        # Summary cards
+        sc = st.columns(5)
+        sc[0].metric("月累计盈亏", f"¥{month_pnl:+,.0f}")
+        sc[1].metric("月收益率", f"{month_return:+.1f}%" if month_snapshots else "-")
+        sc[2].metric("盈利天数", str(pos_days))
+        sc[3].metric("亏损天数", str(neg_days))
+        sc[4].metric("胜率", f"{win_rate:.0f}%" if total_days > 0 else "-")
+
+        # Calendar grid
+        st.markdown("---")
+        st.markdown(f"### {year}年{month}月")
+
+        # Day name header
+        header_cols = st.columns(7)
+        for i, dn in enumerate(day_names):
+            with header_cols[i]:
+                st.markdown(f"**{dn}**")
+
+        # Week rows
+        for week in weeks:
+            day_cols = st.columns(7)
+            for i, d in enumerate(week):
+                with day_cols[i]:
+                    if d == 0:
+                        st.write("")
+                    else:
+                        d_date = dt_date(year, month, d)
+                        info = snap_map.get(d_date, {})
+                        pnl = info.get("pnl", 0) or 0
+                        ret = info.get("ret", 0) or 0
+
+                        if pnl > 0:
+                            color = "#d4edda"
+                            emoji = "🟢"
+                        elif pnl < 0:
+                            color = "#f8d7da"
+                            emoji = "🔴"
+                        else:
+                            color = "#f0f0f0"
+                            emoji = "⬜"
+
+                        # Highlight today
+                        is_today = d_date == today
+                        border = "2px solid #1f77b4" if is_today else "1px solid #ddd"
+                        font_weight = "bold" if is_today else "normal"
+
+                        st.markdown(
+                            f"""<div style="background:{color};border:{border};border-radius:8px;
+                            padding:4px 6px;text-align:center;font-size:12px;{font_weight}">
+                            <b>{d}</b><br>{emoji}<br><small>¥{pnl:+.0f}</small></div>""",
+                            unsafe_allow_html=True
+                        )
+
+        # Recorded data table
+        st.markdown("---")
+        st.subheader("历史记录")
+        if snapshots:
+            hist_data = []
+            for s in reversed(snapshots[-30:]):  # Last 30 days
+                hist_data.append({
+                    "日期": str(s.snapshot_date),
+                    "市值": f"¥{s.total_value:,.2f}" if s.total_value else "-",
+                    "日盈亏": f"¥{(s.daily_pnl or 0):+,.2f}",
+                    "日收益率": f"{(s.daily_return_pct or 0)*100:+.2f}%" if s.daily_return_pct is not None else "-",
+                    "备注": s.notes or "",
+                })
+            st.dataframe(pd.DataFrame(hist_data), use_container_width=True, hide_index=True)
+        else:
+            st.caption("暂无记录，点上方「📸 记录今日市值」开始追踪")
+
+        # Cumulative chart
+        if len(snapshots) >= 2:
+            st.markdown("---")
+            st.subheader("市值走势")
+            chart_data = pd.DataFrame([{
+                "date": s.snapshot_date,
+                "value": s.total_value,
+            } for s in snapshots])
+            st.line_chart(chart_data.set_index("date"), height=250)
+
+# ============================================================
+# PAGE 7: Alert Center
 # ============================================================
 elif page == "⚠ 告警中心":
     st.title("告警中心")

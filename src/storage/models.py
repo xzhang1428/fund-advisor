@@ -293,3 +293,22 @@ class Alert(Base):
     message = Column(Text, nullable=False, comment="告警消息")
     is_read = Column(Boolean, default=False, comment="是否已读")
     triggered_at = Column(DateTime, default=datetime.now, comment="触发时间")
+
+
+# ============================================================
+# Daily Snapshot (portfolio value tracker)
+# ============================================================
+class DailySnapshot(Base):
+    __tablename__ = "daily_snapshots"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    portfolio_id = Column(Integer, ForeignKey("portfolios.id"), nullable=False)
+    snapshot_date = Column(Date, nullable=False, comment="日期")
+    total_value = Column(Float, comment="当日总市值")
+    daily_pnl = Column(Float, comment="当日盈亏金额")
+    daily_return_pct = Column(Float, comment="当日收益率")
+    notes = Column(Text, comment="备注（如分红、加仓等）")
+
+    __table_args__ = (
+        UniqueConstraint("portfolio_id", "snapshot_date", name="uq_snapshot_portfolio_date"),
+    )
