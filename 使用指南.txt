@@ -1,0 +1,227 @@
+================================================================================
+  基金投资顾问系统 - 使用指南
+================================================================================
+
+【如何启动（每天一次）】
+
+  方式一（推荐）：双击项目文件夹里的「启动系统.bat」
+    → 会自动弹出黑色窗口，不要关掉
+    → 浏览器打开 http://localhost:8504
+
+  方式二（终端启动）：
+    export PYTHONUTF8=1
+    cd C:\Users\张可心\fund-advisory-system
+    /d/python/python.exe -m streamlit run dashboard/app.py --server.headless true --server.port 8504
+
+  访问地址：
+    本机浏览器:  http://localhost:8504
+    手机/平板:   http://192.168.2.55:8504  (需连同一WiFi)
+
+  关闭：关掉黑色终端窗口即可。
+
+
+【日常操作流程（每月一次即可，不需要每天）】
+
+  1. 双击「启动系统.bat」
+  2. 浏览器打开 http://localhost:8504
+  3. 🏠 市场概览 → 点「刷新数据」拉取最新行情
+  4. 💡 投资建议 → 选组合 → 点「分析持仓并生成建议」→ 看本月操作建议
+  5. ⚠ 告警中心 → 点「检查告警」→ 看是否有需要处理的紧急情况
+  6. 如有需要，去 📊 组合管理 执行加减仓操作
+
+
+【第二步：认识面板（左侧5个功能页）】
+
+  ┌────────────────────────────────────────────────────┐
+  │  🏠 市场概览                                       │
+  │  ├─ 四大指数实时行情（上证/沪深300/创业板/中证500） │
+  │  └─ 最新涨跌幅 + PE估值                             │
+  │                                                    │
+  │  🔍 基金筛选                                       │
+  │  ├─ 下拉选基金类型（股票型/混合型/债券型...）       │
+  │  ├─ 拖动滑杆选显示数量                              │
+  │  └─ 点"搜索基金"按钮 → 显示排名表                   │
+  │                                                    │
+  │  📊 组合管理                                       │
+  │  ├─ 下拉选你的组合（如 [1] 实盘演示）               │
+  │  ├─ 顶部三数字：市值 / 收益率 / 持仓数              │
+  │  ├─ 中间表格：每只基金的份额/成本/盈亏              │
+  │  ├─ 饼图：资产配置分布                              │
+  │  └─ 底部：约束警告（超配/低配/集中度超标）          │
+  │                                                    │
+  │  💡 投资建议                                       │
+  │  ├─ 下拉选组合                                      │
+  │  └─ 点"生成交易信号" → 每只基金给出：               │
+  │      [BUY]买入 / [ACC]加仓 / [HLD]持有             │
+  │      [RED]减仓 / [SEL]卖出                         │
+  │      含评分、置信度、操作理由                        │
+  │                                                    │
+  │  ⚠ 告警中心                                        │
+  │  ├─ 上半部分：6条告警规则说明                        │
+  │  └─ 点"检查告警" → 实时显示告警（回撤/集中度/...）  │
+  └────────────────────────────────────────────────────┘
+
+
+【第三步：日常操作流水线】
+
+  每天只需做3件事：
+
+  1. 打开终端，更新数据：
+     export PYTHONUTF8=1
+     cd /c/Users/张可心/fund-advisory-system
+     /d/python/python.exe -m src.cli.main fetch market
+
+  2. 刷新浏览器面板，查看市场概览和告警
+
+  3. 点"投资建议" → 生成信号 → 决定买卖
+
+
+【常用命令行操作速查】
+
+  每次使用前先设置环境变量（避免中文乱码）：
+
+    export PYTHONUTF8=1
+    cd /c/Users/张可心/fund-advisory-system
+
+  ─── 创建你的第一个组合 ───
+
+    /d/python/python.exe -m src.cli.main portfolio create \
+      --name "我的组合" --capital 100000 --profile Moderate
+
+    风险级别: Conservative(保守) / Moderate(稳健) / Balanced(平衡) / Aggressive(进取)
+
+  ─── 添加买入记录 ───
+
+    /d/python/python.exe -m src.cli.main portfolio add 1 \
+      --fund "110011" --shares 5000 --cost 3.2500
+
+    参数说明: 1=组合ID  110011=基金代码  5000=购买份额  3.2500=买入净值
+
+  ─── 查看组合 ───
+
+    /d/python/python.exe -m src.cli.main portfolio show 1
+
+  ─── 卖出基金 ───
+
+    /d/python/python.exe -m src.cli.main portfolio remove 1 \
+      --fund "110011" --shares 2000 --price 3.5000
+
+    不指定 --shares 则全部卖出
+
+  ─── 获取买卖建议 ───
+
+    /d/python/python.exe -m src.cli.main recommend portfolio 1
+
+  ─── 更新全部数据 ───
+
+    /d/python/python.exe -m src.cli.main fetch all
+
+  ─── 市场行情分析 ───
+
+    /d/python/python.exe -m src.cli.main analyze market
+
+  ─── 估值分析 ───
+
+    /d/python/python.exe -m src.cli.main analyze valuation
+
+  ─── 推荐基金 Top10 ───
+
+    /d/python/python.exe -m src.cli.main recommend funds --category Mixed --top 10
+
+    类别选项: Stock(股票) / Mixed(混合) / Bond(债券) / Index(指数) / Money(货币) / QDII
+
+  ─── 资产配置建议 ───
+
+    /d/python/python.exe -m src.cli.main recommend allocation --profile Moderate
+
+  ─── 检查告警 ───
+
+    /d/python/python.exe -m src.cli.main monitor check --portfolio 1
+
+  ─── 风险测评问卷 ───
+
+    /d/python/python.exe -m src.cli.main risk-assessment
+
+  ─── 列出所有组合 ───
+
+    /d/python/python.exe -m src.cli.main portfolio list
+
+
+【基金代码从哪来？】
+
+  方式一：在面板 🔍基金筛选 页面搜索，表格第一列就是基金代码
+  方式二：打开天天基金网 https://fund.eastmoney.com 搜索基金名称
+  方式三：常用指数基金代码：
+    510300  沪深300ETF
+    510500  中证500ETF
+    159915  创业板ETF
+    588000  科创50ETF
+
+
+【评分模型说明】
+
+  系统给每只基金打 0-100 分，综合考量：
+
+    收益能力 (35%)  - 近1年+近3年收益
+    风险控制 (30%)  - 夏普比率+最大回撤
+    管理质量 (15%)  - 基金经理经验+费率
+    规模适配 (5%)   - 基金规模适中
+    市场适配 (15%)  - 牛熊市下的匹配度
+
+  牛市 → 更看重收益；熊市 → 更看重回撤控制
+
+
+【信号含义】
+
+  [BUY] 买入   - 评分>=70 + 市场环境有利，高置信度买入
+  [ACC] 加仓   - 评分>=70，但市场不完美，可分批加仓
+  [HLD] 持有   - 评分50-70，继续持有观察
+  [RED] 减仓   - 评分30-50，建议减半仓
+  [SEL] 卖出   - 评分<30 或 亏损>15%触发止损
+
+
+【投资策略建议】
+
+  震荡市（当前状态）：
+    适合定投指数基金，逢低买入，不要追高
+    建议 混合型 + 指数型 + 债券型 均衡配置
+
+  牛市：
+    加大权益类比例（股票型+指数型），享受趋势收益
+    注意设置止盈线，分批落袋
+
+  熊市：
+    增加防御类比例（债券型+货币型），保留现金
+    定投坚持，低位收集筹码
+
+
+【常见问题】
+
+  Q: 面板打开后数据是空的？
+  A: 先执行 fetch all 命令拉取数据，然后刷新浏览器
+
+  Q: 中文显示乱码？
+  A: 每次打开终端先执行 export PYTHONUTF8=1
+
+  Q: 如何更换基金？
+  A: 先 remove 卖出旧基金，再 add 买入新基金
+
+  Q: 如何看历史盈亏？
+  A: 更新净值后 portfolio show 会显示最新盈亏
+     命令: /d/python/python.exe -m src.cli.main portfolio show 组合ID
+
+  Q: 面板怎么停？
+  A: 在启动面板的终端按 Ctrl+C
+
+
+================================================================================
+  快速启动卡片（复制到终端即可）
+================================================================================
+
+  # 一行命令启动面板
+  export PYTHONUTF8=1 && cd /c/Users/张可心/fund-advisory-system && /d/python/python.exe -m streamlit run dashboard/app.py --server.headless true
+
+  # 每天更新数据
+  export PYTHONUTF8=1 && cd /c/Users/张可心/fund-advisory-system && /d/python/python.exe -m src.cli.main fetch market
+
+================================================================================

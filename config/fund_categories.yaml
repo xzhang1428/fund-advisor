@@ -1,0 +1,54 @@
+# Fund category definitions and benchmarks
+categories:
+  股票型:
+    description: "主要投资于股票市场，股票仓位≥80%"
+    risk_level: high
+    benchmark: "000300"  # 沪深300
+    typical_return_range: [-25%, +50%]
+
+  混合型:
+    description: "灵活配置股票和债券，股票仓位0-95%"
+    risk_level: medium_high
+    benchmark: "000300"
+    typical_return_range: [-15%, +35%]
+
+  债券型:
+    description: "主要投资于债券市场，债券仓位≥80%"
+    risk_level: medium_low
+    benchmark: "国债指数"
+    typical_return_range: [-3%, +12%]
+
+  指数型:
+    description: "跟踪特定指数表现，费率低"
+    risk_level: high
+    benchmark: "对应跟踪指数"
+    typical_return_range: [-25%, +45%]
+
+  货币型:
+    description: "投资于短期货币工具，流动性好"
+    risk_level: low
+    benchmark: "7天通知存款"
+    typical_return_range: [1.5%, 4%]
+
+  QDII:
+    description: "投资海外市场，可分散单一市场风险"
+    risk_level: high
+    benchmark: "MSCI World"
+    typical_return_range: [-20%, +40%]
+
+# Market regime descriptions
+market_regimes:
+  bull:
+    description: "牛市 - 指数在年线上方，短期均线在长期均线上方，成交量放大"
+    favored_categories: ["股票型", "指数型", "混合型"]
+    action: "可适当加仓权益类资产"
+
+  bear:
+    description: "熊市 - 指数在年线下方，短期均线在长期均线下方，成交量萎缩"
+    favored_categories: ["债券型", "货币型"]
+    action: "建议增加防御性资产配置"
+
+  sideways:
+    description: "震荡市 - 指数围绕均线波动，无明确趋势"
+    favored_categories: ["混合型", "债券型"]
+    action: "适合定投策略，逢低布局"

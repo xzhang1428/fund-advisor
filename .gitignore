@@ -1,0 +1,9 @@
+data/
+__pycache__/
+*.pyc
+*.pkl
+.vscode/
+.idea/
+*.egg-info/
+dist/
+build/
