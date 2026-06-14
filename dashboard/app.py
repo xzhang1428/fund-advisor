@@ -1183,12 +1183,22 @@ elif page == "📅 收益日历":
             summary = mgr.get_portfolio_summary(pid)
             current_val = summary.get("current_value", 0)
             prev = repo.get_latest_snapshot(pid)
-            prev_val = prev.total_value if prev else summary.get("initial_capital", current_val)
-            daily_pnl = current_val - prev_val
-            daily_ret = (current_val / prev_val - 1) if prev_val > 0 else 0
+            if prev and prev.total_value:
+                prev_val = prev.total_value
+                daily_pnl = current_val - prev_val
+                daily_ret = (current_val / prev_val - 1) if prev_val > 0 else 0
+            else:
+                # First record: use today as baseline, zero P&L
+                daily_pnl = 0.0
+                daily_ret = 0.0
             repo.record_daily_snapshot(pid, dt_date.today(), current_val, daily_pnl, daily_ret)
             commit()
-            st.success(f"已记录！今日市值 ¥{current_val:,.2f}，日盈亏 ¥{daily_pnl:+,.2f} ({daily_ret*100:+.2f}%)")
+            msg = f"已记录！今日市值 ¥{current_val:,.2f}"
+            if prev:
+                msg += f"，日盈亏 ¥{daily_pnl:+,.2f} ({daily_ret*100:+.2f}%)"
+            else:
+                msg += "（首次记录，设为基准日）"
+            st.success(msg)
             st.rerun()
 
         # Calendar view
