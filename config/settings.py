@@ -9,12 +9,8 @@ from enum import Enum
 import os
 PROJECT_ROOT = Path(__file__).parent.parent
 
-# Use /tmp for DB on Streamlit Cloud (Linux), local dir on Windows
-if os.environ.get('STREAMLIT_CLOUD') or os.environ.get('IS_STREAMLIT_CLOUD'):
-    DATA_DIR = Path('/tmp/fund_advisor_data')
-else:
-    DATA_DIR = PROJECT_ROOT / "data"
-
+# Use project dir for DB (persists on Streamlit Cloud between sleeps)
+DATA_DIR = PROJECT_ROOT / "data"
 DB_PATH = DATA_DIR / "fund_advisory.db"
 CACHE_DIR = DATA_DIR / "cache"
 

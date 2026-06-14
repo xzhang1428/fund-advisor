@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+PROJECT_ROOT = Path(__file__).parent.parent
 
 import streamlit as st
 import pandas as pd
@@ -22,6 +23,7 @@ st.set_page_config(
 # ============================================================
 
 # Create a fresh session on each script run
+import config.settings as config
 from src.storage.engine import SessionLocal
 from src.storage.repository import Repository
 from src.storage.models import Base
@@ -64,6 +66,34 @@ else:
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"数据日期: {date.today()}")
+
+# Backup & Restore
+with st.sidebar.expander("💾 备份/恢复数据"):
+    st.caption("更新代码前请先下载备份")
+    # Download backup
+    try:
+        with open(config.settings.DB_PATH, 'rb') as f:
+            db_bytes = f.read()
+        st.download_button(
+            "⬇ 下载数据备份",
+            db_bytes,
+            "fund_backup.db",
+            "application/octet-stream",
+            use_container_width=True
+        )
+    except Exception:
+        st.caption("暂无数据可备份")
+    # Restore
+    uploaded = st.file_uploader("⬆ 恢复备份", type=['db'], label_visibility="collapsed")
+    if uploaded:
+        try:
+            with open(config.settings.DB_PATH, 'wb') as f:
+                f.write(uploaded.read())
+            st.success("已恢复！刷新页面生效")
+            st.rerun()
+        except Exception as e:
+            st.error(f"恢复失败: {e}")
+
 st.sidebar.caption("数据来源: akshare")
 
 # Navigation
