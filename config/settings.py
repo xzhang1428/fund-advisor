@@ -135,9 +135,9 @@ ALERT_THRESHOLDS = {
 # Fetch settings
 # ============================================================
 CACHE_TTL_HOURS = 4
-MAX_RETRIES = 3
-RETRY_BACKOFF_SECONDS = [5, 15, 60]
-REQUEST_TIMEOUT = 30
+MAX_RETRIES = 1
+RETRY_BACKOFF_SECONDS = [2]
+REQUEST_TIMEOUT = 15
 
 # ============================================================
 # Analysis settings

@@ -4,6 +4,7 @@ import time
 import pickle
 import hashlib
 import functools
+import signal
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Callable, Any
@@ -11,6 +12,18 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from config.settings import CACHE_DIR, CACHE_TTL_HOURS, MAX_RETRIES, RETRY_BACKOFF_SECONDS, REQUEST_TIMEOUT
+
+# Set default timeout for all HTTP requests to prevent hanging on cloud
+try:
+    import requests
+    _original_request = requests.Session.request
+    def _patched_request(self, method, url, **kwargs):
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = REQUEST_TIMEOUT
+        return _original_request(self, method, url, **kwargs)
+    requests.Session.request = _patched_request
+except ImportError:
+    pass
 
 
 def cache_key(func_name: str, *args, **kwargs) -> str:
