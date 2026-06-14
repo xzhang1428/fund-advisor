@@ -24,6 +24,11 @@ st.set_page_config(
 # Create a fresh session on each script run
 from src.storage.engine import SessionLocal
 from src.storage.repository import Repository
+from src.storage.models import Base
+
+# Auto-create tables on first run (critical for Streamlit Cloud)
+from src.storage.engine import engine
+Base.metadata.create_all(bind=engine)
 
 _db_session = SessionLocal()
 _db_repo = Repository(_db_session)
